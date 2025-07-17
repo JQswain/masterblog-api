@@ -12,7 +12,26 @@ POSTS = [
 
 @app.route('/api/posts', methods=['GET'])
 def get_posts():
-    return jsonify(POSTS)
+    sort = request.args.get('sort')
+    direction = request.args.get('direction')
+
+    response = POSTS.copy()
+
+    valid_sorts = {'title', 'content'}
+    valid_directions = {'asc', 'desc'}
+
+    if not sort and direction:
+        return jsonify(response)
+
+    elif sort not in valid_sorts or direction not in valid_directions:
+        return jsonify({'error': 'sort or directions must be a valid type'}, 400)
+
+    elif sort in valid_sorts and direction in valid_directions:
+        reverse = direction == 'desc'
+        response = sorted(response, key=lambda post: post[sort].lower(), reverse=reverse)
+
+    return jsonify(response)
+
 
 @app.route('/api/posts', methods=['POST'])
 def add_post():
@@ -31,6 +50,7 @@ def delete_post(post_id):
             POSTS.remove(post)
             return jsonify({'message': f"Post with {post_id} has been deleted successfully."}), 200
     return jsonify({'message': f"Post with id {post_id} was not found."}), 404
+
 
 @app.route('/api/posts/<int:post_id>', methods=['PUT'])
 def update_post(post_id):
@@ -57,6 +77,20 @@ def update_post(post_id):
     return jsonify({'message': f"Post with id {post_id} was not found."}), 404
 
 
+@app.route('/api/posts/search', methods=['GET'])
+def search_posts():
+    title = request.args.get('title')
+    content = request.args.get('content')
+    search_list = []
+    if title and content:
+        for post in POSTS:
+            matches_title = title or title.lower() in post['title'].lower()
+            matches_content = content or content.lower() in post['content'].lower()
+
+            if (title and matches_title) or (content and matches_content):
+                search_list.append(post)
+
+    return jsonify(search_list), 200
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5002, debug=True)
