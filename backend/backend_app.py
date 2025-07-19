@@ -36,18 +36,18 @@ def get_posts():
     valid_sorts = {'title', 'content'}
     valid_directions = {'asc', 'desc'}
 
-    if not sort and direction:
-        return jsonify(response)
-
-    elif sort not in valid_sorts or direction not in valid_directions:
-        return jsonify({'error': 'sort or directions must be a valid type'}, 400)
-
-    elif sort in valid_sorts and direction in valid_directions:
+    # If both sort and direction are provided
+    if sort and direction:
+        if sort not in valid_sorts or direction not in valid_directions:
+            return jsonify({'error': 'sort or direction must be a valid type'}), 400
         reverse = direction == 'desc'
         response = sorted(response, key=lambda post: post[sort].lower(), reverse=reverse)
 
-    return jsonify(response)
+    # If only one is provided (incomplete query)
+    elif sort or direction:
+        return jsonify({'error': 'Both sort and direction must be provided'}), 400
 
+    return jsonify(response)
 
 @app.route('/api/posts', methods=['POST'])
 def add_post():
