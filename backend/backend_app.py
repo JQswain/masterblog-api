@@ -1,8 +1,24 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_swagger_ui import get_swaggerui_blueprint
+
 
 app = Flask(__name__)
 CORS(app)  # This will enable CORS for all routes
+
+SWAGGER_URL="/api/docs"  # (1) swagger endpoint e.g. HTTP://localhost:5002/api/docs
+API_URL="/static/masterblog.json" # (2) ensure you create this dir and file
+
+swagger_ui_blueprint = get_swaggerui_blueprint(
+    SWAGGER_URL,
+    API_URL,
+    config={
+        'app_name': 'Masterblog API' # (3) You can change this if you like
+    }
+)
+app.register_blueprint(swagger_ui_blueprint, url_prefix=SWAGGER_URL)
+
+
 
 POSTS = [
     {"id": 1, "title": "First post", "content": "This is the first post."},
@@ -79,16 +95,16 @@ def update_post(post_id):
 
 @app.route('/api/posts/search', methods=['GET'])
 def search_posts():
-    title = request.args.get('title')
-    content = request.args.get('content')
+    title = request.args.get('title', '').lower()
+    content = request.args.get('content', '').lower()
     search_list = []
-    if title and content:
-        for post in POSTS:
-            matches_title = title or title.lower() in post['title'].lower()
-            matches_content = content or content.lower() in post['content'].lower()
 
-            if (title and matches_title) or (content and matches_content):
-                search_list.append(post)
+    for post in POSTS:
+        matches_title = title in post['title'].lower() if title else True
+        matches_content = content in post['content'].lower() if content else True
+
+        if matches_title and matches_content:
+            search_list.append(post)
 
     return jsonify(search_list), 200
 
